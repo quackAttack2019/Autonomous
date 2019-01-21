@@ -1,79 +1,42 @@
 package org.firstinspires.ftc.teamcode;
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
-import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
-import org.firstinspires.ftc.robotcore.external.navigation.Position;
-import org.firstinspires.ftc.robotcore.external.navigation.Velocity;
-import org.firstinspires.ftc.teamcode.PID;
-
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.Range;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import org.firstinspires.ftc.robotcore.external.Func;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+import org.firstinspires.ftc.robotcore.external.navigation.Position;
+import org.firstinspires.ftc.robotcore.external.navigation.Velocity;
+import java.sql.Time;
+import org.firstinspires.ftc.teamcode.SensorBNO055IMU;
 import com.qualcomm.robotcore.hardware.GyroSensor;
 import com.qualcomm.robotcore.hardware.Gyroscope;
 
-
-@Autonomous(name = "just drive already!", group = "Autonomous")
-public class Auto extends LinearOpMode {
-    BNO055IMU imu;
-    Orientation angles;
-    DcMotor LB,LF,RB,RF;
-    double current, LBP,LFP,RBP,RFP;
-    @Override
-    public void runOpMode() {
-
-        PID pid_gyro = new PID(2, 0.01,  0.04,0);
-        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
-        parameters.angleUnit           = BNO055IMU.AngleUnit.RADIANS;
-        parameters.calibrationDataFile = "BNO055IMUCalibration.json";
-        parameters.loggingEnabled      = true;
-        parameters.loggingTag          = "IMU";
-
-
-
-        imu = hardwareMap.get(BNO055IMU.class, "imu");
-        imu.initialize(parameters);
-
-
-        waitForStart();
-
-        imu.startAccelerationIntegration(new Position(), new Velocity(), 1000);
-        LB = hardwareMap.dcMotor.get("BL");
-        RB = hardwareMap.dcMotor.get("BR");
-        LF = hardwareMap.dcMotor.get("FL");
-        RF = hardwareMap.dcMotor.get("FR");
-        LB.setDirection(DcMotor.Direction.REVERSE);
-        LF.setDirection(DcMotor.Direction.REVERSE);
-        while (opModeIsActive()) {
-            angles   = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.RADIANS);
-            current = angles.firstAngle;
-            double fix = pid_gyro.fix(current, 0);
-            drive(0.90, fix, 0);
-            telemetry.addData("fix", fix);
-            telemetry.update();
-            idle();
-        }
-}
-
-
-    public void drive(double a, double b, double c){
-        LFP = a - b + c;
-        LBP = a - b - c;
-        RFP = a + b - c;
-        RBP = a + b + c;
-        LF.setPower(LFP);
-        LB.setPower(LBP);
-        RF.setPower(RFP);
-        RB.setPower(RBP);
-
+public class PID {
+    double target, last_error;
+    double kp, kd, ki, cur, error, integral, der, fix;
+    public PID (double kp,double kd, double ki,double targ) {
+        this.kp = kp;
+        this.kd = kd;
+        this.ki = ki;
+        this.target = targ;
     }
+    double fix(double cur, double ang) {
+        ang = ang * Math.PI / 180;
+        error = target - cur + ang;
+        integral += error;
+        der = last_error - error;
+        fix = error * kp + integral * ki + der * kd;
+        return fix;
+    }
+
+
+
+
 }
